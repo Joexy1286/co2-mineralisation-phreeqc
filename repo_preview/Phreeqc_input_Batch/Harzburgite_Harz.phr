@@ -1,0 +1,169 @@
+DATABASE C:\Users\User\Desktop\Thesis\Model\carbfix.dat
+INCLUDE$ C:\Users\User\Desktop\Thesis\Model\Rates_input_corrected.phr
+
+# ============================================================
+# SIMULATION 1: Pre-injection water at pH 9.6
+# German Ultramafic Rock (Harzburgite Harz)
+# Mineral fractions: Forsterite (Fe-bearing) 0.32,
+#   Lizardite (Serpentine) 0.55, Augite 0.13
+# High pH reflects serpentinization-derived alkalinity
+# Note: No lab anion data available; charge balance applied to C(4)
+# ============================================================
+SOLUTION 1
+    temp        60
+    pH          9.6
+    units       mmol/L
+    density     1.0
+
+    Na          0.126
+    K           0.089
+    Mg          1.160
+    Ca          0.066
+    C(4)        1.0   charge   # No anion lab data; DIC balances charge
+
+    -water      0.5
+
+END
+
+# ============================================================
+# SIMULATION 2: CO2 injection 
+# ============================================================
+USE solution 1
+
+EQUILIBRIUM_PHASES 1
+    CO2(g)      1.0    10
+
+SAVE solution 1
+
+END
+
+
+USE solution 1
+
+EQUILIBRIUM_PHASES 1
+    CO2(g)      1.0    10
+    Kaolinite   0      0
+    Siderite    0      0
+    Goethite    0      0    # Fe-oxyhydroxide sink; prevents negative Fe during kinetic steps
+    Brucite     0      0    # Mg(OH)2 sink; relevant at high pH from serpentinization
+    SiO2(am)    0      0    # caps dissolved Si at ~2 mM (60°C); prevents Si overestimate
+    
+
+KINETICS 1
+
+    Forsterite_ss
+    -formula    Mg1.6Fe0.4SiO4  1
+    -m          0.2208
+    -m0         0.2208
+    -parms      0   0.007  1    
+                                   
+    -tol        1e-8
+
+    Lizardite
+    -formula    Mg3Si2O5(OH)4  1
+    -m          0.2100
+    -m0         0.2100
+    -parms      0   0.02   1    
+    -tol        1e-8
+
+    Augite_ss
+    -formula    Mg0.45Fe0.275Ca0.275SiO3  1
+    -m          0.1206
+    -m0         0.1206
+    -parms      0   0.15   1
+    -tol        1e-8
+
+
+    -steps          3628800 in 200 steps   
+    -cvode          true                   
+    -cvode_order    5                      
+    -cvode_steps    500                    
+    -bad_step_max   2000                   
+
+INCREMENTAL_REACTIONS true
+
+SAVE solution 1
+
+
+SELECTED_OUTPUT
+    -file           Harzburgite_Harz_v1.sel
+    -reset          false
+    -time           true
+    -pH             true
+    -totals         Ca Mg Na K Si Fe Al
+    -equilibrium_phases  Kaolinite Siderite Goethite Brucite SiO2(am)
+
+# ============================================================
+# OUTPUT GRAPHS
+# ============================================================
+
+USER_GRAPH 1
+    -heading    Time_days  pH_model  pH_preinjection  pH_final_measured
+    -axis_titles  "Time (days)"  "pH"
+    -axis_scale x_axis 0 42
+    -axis_scale y_axis 3 11
+    -start
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y -LA("H+")
+    30 graph_y 9.6
+    40 graph_y 6.92     
+    -end
+
+USER_GRAPH 2
+    -heading    Time_days  Forsterite_ss_mol  Lizardite_mol  Augite_ss_mol
+    -axis_titles  "Time (days)"  "Mineral remaining (moles)"
+    -axis_scale x_axis 0 42
+    -start
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y KIN("Forsterite_ss")
+    30 graph_y KIN("Lizardite")
+    40 graph_y KIN("Augite_ss")
+    -end
+
+USER_GRAPH 3
+    -heading    Time_days  Ca_mM  Mg_mM  Si_mM  Fe2_mM  Al_mM  Na_mM  K_mM  Mg_lab_initial  Mg_lab_final
+    -axis_titles  "Time (days)"  "Concentration (mM)"
+    -axis_scale x_axis 0 42
+    -start
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y TOT("Ca")    * 1000
+    30 graph_y TOT("Mg")    * 1000
+    40 graph_y TOT("Si")    * 1000
+    50 graph_y TOT("Fe(2)") * 1000
+    60 graph_y TOT("Al")    * 1000
+    70 graph_y TOT("Na")    * 1000
+    80 graph_y TOT("K")     * 1000
+    90 graph_y 1.16         
+    100 graph_y 53.9        
+    -end
+
+USER_GRAPH 4
+    -heading    Time_days  SI_Calcite  SI_Kaolinite  SI_Siderite  SI_Dolomite  SI_Goethite  SI_Brucite  SI_SiO2am  SI_zero
+    -axis_titles  "Time (days)"  "Saturation Index"
+    -axis_scale x_axis 0 42
+    -start
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y SI("Calcite")
+    30 graph_y SI("Kaolinite")
+    40 graph_y SI("Siderite")
+    50 graph_y SI("Dolomite")
+    55 graph_y SI("Goethite")
+    57 graph_y SI("Brucite")
+    58 graph_y SI("SiO2(am)")
+    60 graph_y 0
+    -end
+
+USER_GRAPH 5
+    -heading    Time_days  Kaolinite_mol  Siderite_mol  Goethite_mol  Brucite_mol  SiO2am_mol
+    -axis_titles  "Time (days)"  "Secondary mineral precipitated (moles)"
+    -axis_scale x_axis 0 42
+    -start
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y EQUI("Kaolinite")
+    30 graph_y EQUI("Siderite")
+    40 graph_y EQUI("Goethite")
+    50 graph_y EQUI("Brucite")
+    60 graph_y EQUI("SiO2(am)")
+    -end
+
+END

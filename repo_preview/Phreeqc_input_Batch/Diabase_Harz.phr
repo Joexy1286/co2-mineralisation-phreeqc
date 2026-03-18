@@ -1,0 +1,202 @@
+DATABASE C:\Users\User\Desktop\Thesis\Model\carbfix.dat
+INCLUDE$ C:\Users\User\Desktop\Thesis\Model\Rates_input_corrected.phr
+
+
+SOLUTION 1
+    temp        60
+    pH          8.42
+    units       mmol/L
+    density     1.0
+
+    Na          0.692
+    K           0.220
+    Mg          0.060
+    Ca          0.195
+    Cl          0.12033
+    S(6)        0.06427
+    F           0.0511
+    Br          0.00559
+    C(4)        1.0   charge
+
+    -water      0.5
+
+END
+
+# ============================================================
+# SIMULATION 2: CO2 equilibration — pCO2 = 10 atm (log K = 1.0)
+# ============================================================
+USE solution 1
+
+EQUILIBRIUM_PHASES 1
+    CO2(g)      1.0    10
+
+SAVE solution 1
+
+END
+
+# ============================================================
+# SIMULATION 3: 42-day kinetic batch dissolution at 60°C
+#
+# Mole calculations (rock mass = 105.87 g in 0.5 L water):
+#   Anorthite     frac=0.35, MW=278.2 -> 105.87*0.35/278.2 = 0.1332 mol
+#   Anorthoclase  frac=0.18, MW=263.2 -> 105.87*0.18/263.2 = 0.0724 mol
+#   Augite_ss     frac=0.15, MW=114.0 -> 105.87*0.15/114.0 = 0.1393 mol
+#   Chamosite     frac=0.15, MW=555.0 -> 105.87*0.15/555.0 = 0.0286 mol
+#   Hornblende_ss frac=0.15, MW=875.0 -> 105.87*0.15/875.0 = 0.0182 mol
+#   Magnetite     frac=0.02, MW=231.5 -> 105.87*0.02/231.5 = 0.0091 mol
+#
+# SA calibration (PARM2, m²/g):
+#   Anorthite:     0.020  
+#   Albite:        0.150  
+#   Augite_ss:     0.085  
+#   Chamosite:     0.020  
+#   Hornblende_ss: 0.085  
+#   Magnetite:     0.050 
+# ============================================================
+USE solution 1
+
+EQUILIBRIUM_PHASES 1
+    CO2(g)      1.0    10
+    Kaolinite   0      0
+    Siderite    0      0
+    Dolomite    0      0    
+    Goethite    0      0    
+
+KINETICS 1
+
+    Anorthite
+    -formula    CaAl2Si2O8  1
+    -m          0.1332
+    -m0         0.1332
+    -parms      0   0.020   1
+    -tol        1e-8
+
+    Albite
+    -formula    Na0.60K0.40AlSi3O8  1
+    -m          0.0724
+    -m0         0.0724
+    -parms      0   0.150   1    
+    -tol        1e-8
+
+    Augite_ss
+    -formula    Mg0.45Fe0.275Ca0.275SiO3  1
+    -m          0.1393
+    -m0         0.1393
+    -parms      0   0.085   1    
+    -tol        1e-8
+
+    Chamosite
+    -formula    Fe5Al2Si3O10(OH)8  1
+    -m          0.0286
+    -m0         0.0286
+    -parms      0   0.020   1    
+    -tol        1e-8
+
+    Hornblende_ss
+    -formula    Ca2Mg3Fe2Al2Si6O22(OH)2  1
+    -m          0.0182
+    -m0         0.0182
+    -parms      0   0.085   1    
+    -tol        1e-8
+
+    Magnetite
+    -formula    Fe3O4  1
+    -m          0.0091
+    -m0         0.0091
+    -parms      0   0.050   1    
+    -tol        1e-8
+
+    -steps          3628800 in 200 steps   
+    -cvode          true                   
+    -cvode_order    5                      
+    -cvode_steps    500                    
+    -bad_step_max   2000                   
+
+INCREMENTAL_REACTIONS true
+
+SAVE solution 1
+
+# ============================================================
+# SELECTED OUTPUT
+# ============================================================
+SELECTED_OUTPUT
+    -file               Diabase_Harz_v3.sel
+    -reset              false
+    -time               true
+    -pH                 true
+    -totals             Ca Mg Na K Si Fe Al
+    -equilibrium_phases Kaolinite Siderite Dolomite Goethite
+    -kinetic_reactants  Anorthite Albite Augite_ss Chamosite Hornblende_ss Magnetite
+
+# ============================================================
+# OUTPUT GRAPHS
+# ============================================================
+
+USER_GRAPH 1
+    -heading    Time_days  pH_model  pH_preinjection  pH_final_measured
+    -axis_titles  "Time (days)"  "pH"
+    -axis_scale x_axis 0 42
+    -axis_scale y_axis 3 10
+    -start
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y -LA("H+")
+    30 graph_y 8.42
+    40 graph_y 5.95
+    -end
+
+USER_GRAPH 2
+    -heading    Time_days  Anorthite_mol  Albite_mol  Augite_mol  Chamosite_mol  Hornblende_mol  Magnetite_mol
+    -axis_titles  "Time (days)"  "Mineral remaining (moles)"
+    -axis_scale x_axis 0 42
+    -start
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y KIN("Anorthite")
+    30 graph_y KIN("Albite")
+    40 graph_y KIN("Augite_ss")
+    50 graph_y KIN("Chamosite")
+    60 graph_y KIN("Hornblende_ss")
+    70 graph_y KIN("Magnetite")
+    -end
+
+USER_GRAPH 3
+    -heading    Time_days  Ca_mM  Mg_mM  Na_mM  K_mM  Si_mM  Fe_mM  Al_mM
+    -axis_titles  "Time (days)"  "Concentration (mM)"
+    -axis_scale x_axis 0 42
+    -start
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y TOT("Ca")    * 1000
+    30 graph_y TOT("Mg")    * 1000
+    40 graph_y TOT("Na")    * 1000
+    50 graph_y TOT("K")     * 1000
+    60 graph_y TOT("Si")    * 1000
+    70 graph_y TOT("Fe(2)") * 1000
+    80 graph_y TOT("Al")    * 1000
+    -end
+
+USER_GRAPH 4
+    -heading    Time_days  SI_Calcite  SI_Kaolinite  SI_Siderite  SI_Dolomite  SI_Goethite  SI_zero
+    -axis_titles  "Time (days)"  "Saturation Index"
+    -axis_scale x_axis 0 42
+    -start
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y SI("Calcite")
+    30 graph_y SI("Kaolinite")
+    40 graph_y SI("Siderite")
+    50 graph_y SI("Dolomite")
+    55 graph_y SI("Goethite")
+    60 graph_y 0
+    -end
+
+USER_GRAPH 5
+    -heading    Time_days  Kaolinite_mol  Siderite_mol  Dolomite_mol  Goethite_mol
+    -axis_titles  "Time (days)"  "Secondary mineral precipitated (moles)"
+    -axis_scale x_axis 0 42
+    -start
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y EQUI("Kaolinite")
+    30 graph_y EQUI("Siderite")
+    40 graph_y EQUI("Dolomite")
+    50 graph_y EQUI("Goethite")
+    -end
+
+END

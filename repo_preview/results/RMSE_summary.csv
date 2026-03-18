@@ -1,0 +1,4 @@
+rock,rock_full,pH,Ca_mmolL,Mg_mmolL,Na_mmolL,K_mmolL,notes
+ICBA,Iceland tholeiitic basalt,1.49,0.29,0.49,0.07,0.27,Mg RMSE elevated by open-system boundary; endpoint error +5.5%
+HZWH,Harz Diabase,1.96,0.73,0.43,0.48,0.30,TST lacks burst-dissolution term; day-42 Ca endpoint error -4.8%
+HZF13,Harz Harzburgite,2.40,0.25,2.13,0.09,0.38,Mg from 2 datapoints only; endpoint error -5.5% validates SA=0.007

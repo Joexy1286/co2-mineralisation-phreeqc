@@ -1,0 +1,155 @@
+DATABASE C:\Users\User\Desktop\Thesis\Model\carbfix.dat
+INCLUDE$ C:\Users\User\Desktop\Thesis\Model\Rates_input_corrected.phr
+
+# ============================================================
+# SIMULATION 1: Pre-injection water
+# ============================================================
+SOLUTION 1
+    temp        60
+    pH          7.55
+    units       mmol/L
+    density     1.0
+
+    Na          0.174
+    K           0.279
+    Mg          0.306
+    Ca          0.387
+    Cl          0.24184
+    S(6)        0.01032
+    F           0.00384
+    C(4)        1.0   charge
+
+    -water      0.5
+
+END
+
+# ============================================================
+# SIMULATION 2: CO2 injection
+# ============================================================
+USE solution 1
+
+EQUILIBRIUM_PHASES 1
+    CO2(g)      1.0    10
+
+SAVE solution 1
+
+END
+
+# ============================================================
+# SIMULATION 3: 42-day kinetic batch dissolution
+# ============================================================
+USE solution 1
+
+EQUILIBRIUM_PHASES 1
+    CO2(g)      1.0    10
+    Kaolinite   0      0
+    Siderite    0      0
+    Dolomite    0      0
+
+KINETICS 1
+
+    Bytownite_ss
+    -formula    Ca0.77Na0.23Al1.77Si2.23O8  1
+    -m          0.2844
+    -m0         0.2844
+    -parms      0   0.020  1
+    -tol        1e-8
+
+    Augite_ss
+    -formula    Mg0.45Fe0.275Ca0.275SiO3  1
+    -m          0.1393
+    -m0         0.1393
+    -parms      0   0.020  1
+    -tol        1e-8
+
+    Forsterite
+    -formula    Mg2SiO4  1
+    -m          0.0561
+    -m0         0.0561
+    -parms      0   0.001  1
+    -tol        1e-8
+
+    Magnetite
+    -formula    Fe3O4  1
+    -m          0.0298
+    -m0         0.0298
+    -parms      0   0.050  1
+    -tol        1e-8
+
+    K-feldspar
+    -formula    KAlSi3O8  1
+    -m          0.005
+    -m0         0.005
+    -parms      0   1.000  1    
+    -tol        1e-8
+
+    -steps          3628800 in 200 steps
+    -cvode          true
+    -cvode_order    5
+    -cvode_steps    500
+    -bad_step_max   2000
+
+INCREMENTAL_REACTIONS true
+
+SAVE solution 1
+
+SELECTED_OUTPUT
+    -file               Iceland_Basalt_v36.sel
+    -reset              false
+    -time               true
+    -pH                 true
+    -temperature        true
+    -totals             Ca Mg Si Na K Fe Al C S
+    -saturation_indices Calcite Kaolinite Siderite Dolomite Magnetite K-feldspar
+    -kinetic_reactants  Bytownite_ss Augite_ss Forsterite Magnetite K-feldspar
+
+USER_GRAPH 1
+    -heading    Time_days  pH_model  pH_lab_final
+    -axis_titles  "Time (days)"  "pH"
+    -axis_scale x_axis 0 42
+    -axis_scale y_axis 3 9
+    -start
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y -LA("H+")
+    30 graph_y 5.73
+    -end
+
+USER_GRAPH 2
+    -heading    Time_days  Ca_mM  Mg_mM  Na_mM  K_mM
+    -axis_titles  "Time (days)"  "Concentration (mM)"
+    -axis_scale x_axis 0 42
+    -start
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y TOT("Ca") * 1000
+    30 graph_y TOT("Mg") * 1000
+    40 graph_y TOT("Na") * 1000
+    50 graph_y TOT("K")  * 1000
+    -end
+
+USER_GRAPH 3
+    -heading    Time_days  Bytownite  Augite  Forsterite  Magnetite  Kfeldspar
+    -axis_titles  "Time (days)"  "Mineral remaining (moles)"
+    -axis_scale x_axis 0 42
+    -start
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y KIN("Bytownite_ss")
+    30 graph_y KIN("Augite_ss")
+    40 graph_y KIN("Forsterite")
+    50 graph_y KIN("Magnetite")
+    60 graph_y KIN("K-feldspar")
+    -end
+
+USER_GRAPH 4
+    -heading    Time_days  SI_Calcite  SI_Kaolinite  SI_Siderite  SI_Dolomite  SI_Kfeldspar
+    -axis_titles  "Time (days)"  "Saturation Index"
+    -axis_scale x_axis 0 42
+    -start
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y SI("Calcite")
+    30 graph_y SI("Kaolinite")
+    40 graph_y SI("Siderite")
+    50 graph_y SI("Dolomite")
+    60 graph_y SI("K-feldspar")
+    -end
+
+END

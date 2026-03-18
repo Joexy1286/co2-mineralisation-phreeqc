@@ -1,0 +1,459 @@
+DATABASE C:\Users\User\Desktop\Thesis\Model\carbfix.dat
+INCLUDE$ C:\Users\User\Desktop\Thesis\Model\Rates_input_corrected.phr
+
+# ============================================================
+# SOLUTIONS: Initial porewater — Diabase Harz water chemistry
+# pH 8.42 pre-injection, same composition in all cells and inlet
+# ============================================================
+SOLUTION 1-10
+    temp        60
+    pH          8.42
+    units       mmol/L
+    density     1.0
+    Na          0.692
+    K           0.220
+    Mg          0.060
+    Ca          0.195
+    Cl          0.12033
+    S(6)        0.06427
+    F           0.0511
+    Br          0.00559
+    C(4)        1.0   charge
+    -water      1.0
+END
+
+SOLUTION 0
+    temp        60
+    pH          8.42
+    units       mmol/L
+    density     1.0
+    Na          0.692
+    K           0.220
+    Mg          0.060
+    Ca          0.195
+    Cl          0.12033
+    S(6)        0.06427
+    F           0.0511
+    Br          0.00559
+    C(4)        1.0   charge
+    -water      1.0
+
+EQUILIBRIUM_PHASES 0
+    CO2(g)      1.0    10
+END
+
+# ============================================================
+# EQUILIBRIUM PHASES: Secondary minerals + CO2 in all cells
+# ============================================================
+EQUILIBRIUM_PHASES 1-10
+    CO2(g)      1.0    10
+    Kaolinite   0      0
+    Siderite    0      0
+    Dolomite    0      0
+    Goethite    0      0
+END
+
+# ============================================================
+# KINETICS: Diabase Harz minerals — calibrated SA
+# ============================================================
+KINETICS 1-10
+
+    Anorthite
+    -formula    CaAl2Si2O8  1
+    -m          0.2664
+    -m0         0.2664
+    -parms      0   0.020   1
+    -tol        1e-8
+
+    Albite
+    -formula    Na0.60K0.40AlSi3O8  1
+    -m          0.1448
+    -m0         0.1448
+    -parms      0   0.150   1    
+    -tol        1e-8
+
+    Augite_ss
+    -formula    Mg0.45Fe0.275Ca0.275SiO3  1
+    -m          0.2786
+    -m0         0.2786
+    -parms      0   0.085   1    
+    -tol        1e-8
+
+    Chamosite
+    -formula    Fe5Al2Si3O10(OH)8  1
+    -m          0.0572
+    -m0         0.0572
+    -parms      0   0.020   1    
+    -tol        1e-8
+
+    Hornblende_ss
+    -formula    Ca2Mg3Fe2Al2Si6O22(OH)2  1
+    -m          0.0364
+    -m0         0.0364
+    -parms      0   0.085   1    
+    -tol        1e-8
+
+    Magnetite
+    -formula    Fe3O4  1
+    -m          0.0182
+    -m0         0.0182
+    -parms      0   0.050   1    
+    -tol        1e-8
+
+    -steps          157680 in 1 steps
+    -cvode          true
+    -cvode_order    5
+    -cvode_steps    500
+    -bad_step_max   2000
+
+INCREMENTAL_REACTIONS true
+END
+
+# ============================================================
+# SELECTED_OUTPUT: 
+# ============================================================
+SELECTED_OUTPUT
+    -file                Diabase_Harz_RT_v2.sel
+    -reset               false
+    -step                true
+    -time                true
+    -pH                  true
+    -totals              Ca Mg Na K Si Fe Al
+    -equilibrium_phases  Kaolinite Siderite Dolomite Goethite
+    -kinetic_reactants   Anorthite Albite Augite_ss Chamosite Hornblende_ss Magnetite
+    -saturation_indices  Calcite Kaolinite Siderite Dolomite
+
+USER_PUNCH
+    -heading  Cell  Time_days
+    -start
+    10 PUNCH CELL_NO
+    20 PUNCH TOTAL_TIME / 86400
+    -end
+
+END
+
+# ============================================================
+# TRANSPORT: 
+# 10 cells, 200 shifts, 157680 s/shift = 1.825 days/shift
+# Total: 365 days | monitoring cells: 1, 3, 5, 7, 10
+# ============================================================
+TRANSPORT
+    -cells              10
+    -shifts             200
+    -time_step          157680
+    -flow_direction     forward
+    -boundary_conditions flux flux
+    -dispersivity       0.1
+    -diffc              1e-9
+    -print_cells        1 3 5 7 10
+    -print_frequency    1
+
+# ============================================================
+# pH BREAKTHROUGH — one graph per monitoring cell
+# ============================================================
+
+USER_GRAPH 1
+    -heading  Time_days  pH
+    -axis_titles  "Time (days)"  "pH -- Cell 1 (inlet)"
+    -axis_scale x_axis 0 365
+    -axis_scale y_axis 3 10
+    -start
+    5  if CELL_NO <> 1 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y -LA("H+")
+    30 graph_y 8.42
+    40 graph_y 5.95
+    -end
+
+USER_GRAPH 2
+    -heading  Time_days  pH
+    -axis_titles  "Time (days)"  "pH -- Cell 3"
+    -axis_scale x_axis 0 365
+    -axis_scale y_axis 3 10
+    -start
+    5  if CELL_NO <> 3 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y -LA("H+")
+    30 graph_y 8.42
+    40 graph_y 5.95
+    -end
+
+USER_GRAPH 3
+    -heading  Time_days  pH
+    -axis_titles  "Time (days)"  "pH -- Cell 5 (midpoint)"
+    -axis_scale x_axis 0 365
+    -axis_scale y_axis 3 10
+    -start
+    5  if CELL_NO <> 5 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y -LA("H+")
+    30 graph_y 8.42
+    40 graph_y 5.95
+    -end
+
+USER_GRAPH 4
+    -heading  Time_days  pH
+    -axis_titles  "Time (days)"  "pH -- Cell 7"
+    -axis_scale x_axis 0 365
+    -axis_scale y_axis 3 10
+    -start
+    5  if CELL_NO <> 7 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y -LA("H+")
+    30 graph_y 8.42
+    40 graph_y 5.95
+    -end
+
+USER_GRAPH 5
+    -heading  Time_days  pH
+    -axis_titles  "Time (days)"  "pH -- Cell 10 (outlet)"
+    -axis_scale x_axis 0 365
+    -axis_scale y_axis 3 10
+    -start
+    5  if CELL_NO <> 10 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y -LA("H+")
+    30 graph_y 8.42
+    40 graph_y 5.95
+    -end
+
+# ============================================================
+# Ca BREAKTHROUGH — one graph per cell
+# ============================================================
+
+USER_GRAPH 6
+    -heading  Time_days  Ca_mM
+    -axis_titles  "Time (days)"  "Ca (mM) -- Cell 1"
+    -axis_scale x_axis 0 365
+    -start
+    5  if CELL_NO <> 1 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y TOT("Ca") * 1000
+    -end
+
+USER_GRAPH 7
+    -heading  Time_days  Ca_mM
+    -axis_titles  "Time (days)"  "Ca (mM) -- Cell 3"
+    -axis_scale x_axis 0 365
+    -start
+    5  if CELL_NO <> 3 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y TOT("Ca") * 1000
+    -end
+
+USER_GRAPH 8
+    -heading  Time_days  Ca_mM
+    -axis_titles  "Time (days)"  "Ca (mM) -- Cell 5"
+    -axis_scale x_axis 0 365
+    -start
+    5  if CELL_NO <> 5 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y TOT("Ca") * 1000
+    -end
+
+USER_GRAPH 9
+    -heading  Time_days  Ca_mM
+    -axis_titles  "Time (days)"  "Ca (mM) -- Cell 7"
+    -axis_scale x_axis 0 365
+    -start
+    5  if CELL_NO <> 7 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y TOT("Ca") * 1000
+    -end
+
+USER_GRAPH 10
+    -heading  Time_days  Ca_mM
+    -axis_titles  "Time (days)"  "Ca (mM) -- Cell 10"
+    -axis_scale x_axis 0 365
+    -start
+    5  if CELL_NO <> 10 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y TOT("Ca") * 1000
+    -end
+
+# ============================================================
+# Mg BREAKTHROUGH — one graph per cell
+# ============================================================
+
+USER_GRAPH 11
+    -heading  Time_days  Mg_mM
+    -axis_titles  "Time (days)"  "Mg (mM) -- Cell 1"
+    -axis_scale x_axis 0 365
+    -start
+    5  if CELL_NO <> 1 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y TOT("Mg") * 1000
+    -end
+
+USER_GRAPH 12
+    -heading  Time_days  Mg_mM
+    -axis_titles  "Time (days)"  "Mg (mM) -- Cell 3"
+    -axis_scale x_axis 0 365
+    -start
+    5  if CELL_NO <> 3 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y TOT("Mg") * 1000
+    -end
+
+USER_GRAPH 13
+    -heading  Time_days  Mg_mM
+    -axis_titles  "Time (days)"  "Mg (mM) -- Cell 5"
+    -axis_scale x_axis 0 365
+    -start
+    5  if CELL_NO <> 5 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y TOT("Mg") * 1000
+    -end
+
+USER_GRAPH 14
+    -heading  Time_days  Mg_mM
+    -axis_titles  "Time (days)"  "Mg (mM) -- Cell 7"
+    -axis_scale x_axis 0 365
+    -start
+    5  if CELL_NO <> 7 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y TOT("Mg") * 1000
+    -end
+
+USER_GRAPH 15
+    -heading  Time_days  Mg_mM
+    -axis_titles  "Time (days)"  "Mg (mM) -- Cell 10"
+    -axis_scale x_axis 0 365
+    -start
+    5  if CELL_NO <> 10 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y TOT("Mg") * 1000
+    -end
+
+# ============================================================
+# Anorthite DEPLETION — one graph per cell
+# (primary Ca-releasing phase in Diabase)
+# ============================================================
+
+USER_GRAPH 16
+    -heading  Time_days  Anorthite_mol
+    -axis_titles  "Time (days)"  "Anorthite remaining (mol) -- Cell 1"
+    -axis_scale x_axis 0 365
+    -start
+    5  if CELL_NO <> 1 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y KIN("Anorthite")
+    -end
+
+USER_GRAPH 17
+    -heading  Time_days  Anorthite_mol
+    -axis_titles  "Time (days)"  "Anorthite remaining (mol) -- Cell 3"
+    -axis_scale x_axis 0 365
+    -start
+    5  if CELL_NO <> 3 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y KIN("Anorthite")
+    -end
+
+USER_GRAPH 18
+    -heading  Time_days  Anorthite_mol
+    -axis_titles  "Time (days)"  "Anorthite remaining (mol) -- Cell 5"
+    -axis_scale x_axis 0 365
+    -start
+    5  if CELL_NO <> 5 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y KIN("Anorthite")
+    -end
+
+USER_GRAPH 19
+    -heading  Time_days  Anorthite_mol
+    -axis_titles  "Time (days)"  "Anorthite remaining (mol) -- Cell 7"
+    -axis_scale x_axis 0 365
+    -start
+    5  if CELL_NO <> 7 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y KIN("Anorthite")
+    -end
+
+USER_GRAPH 20
+    -heading  Time_days  Anorthite_mol
+    -axis_titles  "Time (days)"  "Anorthite remaining (mol) -- Cell 10"
+    -axis_scale x_axis 0 365
+    -start
+    5  if CELL_NO <> 10 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y KIN("Anorthite")
+    -end
+
+# ============================================================
+# Kaolinite PRECIPITATION — one graph per cell
+# ============================================================
+
+USER_GRAPH 21
+    -heading  Time_days  Kaolinite_mol
+    -axis_titles  "Time (days)"  "Kaolinite precipitated (mol) -- Cell 1"
+    -axis_scale x_axis 0 365
+    -start
+    5  if CELL_NO <> 1 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y EQUI("Kaolinite")
+    -end
+
+USER_GRAPH 22
+    -heading  Time_days  Kaolinite_mol
+    -axis_titles  "Time (days)"  "Kaolinite precipitated (mol) -- Cell 5"
+    -axis_scale x_axis 0 365
+    -start
+    5  if CELL_NO <> 5 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y EQUI("Kaolinite")
+    -end
+
+USER_GRAPH 23
+    -heading  Time_days  Kaolinite_mol
+    -axis_titles  "Time (days)"  "Kaolinite precipitated (mol) -- Cell 10"
+    -axis_scale x_axis 0 365
+    -start
+    5  if CELL_NO <> 10 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y EQUI("Kaolinite")
+    -end
+
+# ============================================================
+# SPATIAL PROFILES — pH and Ca vs cell number (all timesteps)
+# ============================================================
+
+USER_GRAPH 24
+    -heading  Cell  pH_spatial
+    -axis_titles  "Cell number"  "pH (all timesteps)"
+    -axis_scale x_axis 0 11
+    -axis_scale y_axis 3 10
+    -start
+    10 graph_x CELL_NO
+    20 graph_y -LA("H+")
+    -end
+
+USER_GRAPH 25
+    -heading  Cell  Ca_mM_spatial
+    -axis_titles  "Cell number"  "Ca (mM) -- all timesteps"
+    -axis_scale x_axis 0 11
+    -start
+    10 graph_x CELL_NO
+    20 graph_y TOT("Ca") * 1000
+    -end
+
+# ============================================================
+# SATURATION INDICES at Cell 5 midpoint monitor
+# ============================================================
+
+USER_GRAPH 26
+    -heading  Time_days  SI_Calcite  SI_Kaolinite  SI_Siderite  SI_Dolomite  SI_Goethite  zero
+    -axis_titles  "Time (days)"  "Saturation Index -- Cell 5"
+    -axis_scale x_axis 0 365
+    -start
+    5  if CELL_NO <> 5 then end
+    10 graph_x TOTAL_TIME / 86400
+    20 graph_y SI("Calcite")
+    30 graph_y SI("Kaolinite")
+    40 graph_y SI("Siderite")
+    50 graph_y SI("Dolomite")
+    55 graph_y SI("Goethite")
+    60 graph_y 0
+    -end
+
+END
